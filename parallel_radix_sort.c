@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "mpi.h"
 
 void rng(int* arr, int n) {
@@ -80,10 +81,22 @@ int main(int argc, char *argv[]) {
     // Sort
     int n = 10;
     int* arr = (int*) malloc(sizeof(int) * n);
+
     if (rank == 0) {
         rng(arr, n);
+        printf("[Original array]\n");
         print(arr, n);
+
+        clock_t start, end;
+        double cpu_time_used;
+
+        start = clock();
         radix_sort(arr, n, num_process, rank);
+        end = clock();
+        cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+
+        printf("[Sorted array]\n");
+        printf("[Sorted in %f seconds]\n", cpu_time_used);
         print(arr, n);
     } else {
         radix_sort(arr, n, num_process, rank);

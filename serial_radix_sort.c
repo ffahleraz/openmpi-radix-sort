@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 void rng(int* arr, int n) {
     int seed = 13516095;
@@ -51,10 +52,21 @@ void print(int* arr, int n) {
   
 int main(int argc, char *argv[]) { 
     int n = 10;
-    int arr[n];
+    int* arr = (int*) malloc(sizeof(int) * n);
+    clock_t start, end;
+    double cpu_time_used;
+
     rng(arr, n);
+    printf("[Original array]\n");
     print(arr, n);
+
+    start = clock();
     radix_sort(arr, n);
+    end = clock();
+    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+
+    printf("[Sorted array]\n");
+    printf("[Sorted in %f seconds]\n", cpu_time_used);
     print(arr, n);
     return 0; 
 } 
