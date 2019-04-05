@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void rng(int* arr, int n) 
-{
+void rng(int* arr, int n) {
     int seed = 13516095;
     srand(seed);
     for(long i = 0; i < n; i++) {
@@ -10,8 +9,7 @@ void rng(int* arr, int n)
     }
 }
   
-int get_max(int* arr, int n) 
-{ 
+int get_max(int* arr, int n) { 
     int mx = arr[0]; 
     for (int i = 1; i < n; i++) 
         if (arr[i] > mx) 
@@ -19,8 +17,7 @@ int get_max(int* arr, int n)
     return mx; 
 } 
 
-void count_sort(int* arr, int n, int exp) 
-{ 
+void count_sort(int* arr, int n, int exp) { 
     int output[n]; 
     int i, count[10] = {0}; 
   
@@ -40,23 +37,20 @@ void count_sort(int* arr, int n, int exp)
         arr[i] = output[i]; 
 } 
   
-void radix_sort(int* arr, int n) 
-{ 
+void radix_sort(int* arr, int n) { 
     int m = get_max(arr, n); 
     for (int exp = 1; m/exp > 0; exp *= 10) 
         count_sort(arr, n, exp); 
 }
 
-void print(int* arr, int n) 
-{ 
+void print(int* arr, int n) { 
     for (int i = 0; i < n; i++) 
         printf("%d ", arr[i]); 
     printf("\n");
 } 
   
 // Driver program
-int main() 
-{ 
+int main(int argc, char *argv[]) { 
     int n = 10;
     int arr[n];
     rng(arr, n);

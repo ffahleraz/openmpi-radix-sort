@@ -3,8 +3,7 @@
 #include <string.h>
 #include "mpi.h"
 
-void rng(int* arr, int n) 
-{
+void rng(int* arr, int n) {
     int seed = 13516095;
     srand(seed);
     for(long i = 0; i < n; i++) {
@@ -12,8 +11,15 @@ void rng(int* arr, int n)
     }
 }
 
-int main(int argc, char *argv[]) 
-{
+int get_max(int* arr, int n) { 
+    int mx = arr[0]; 
+    for (int i = 1; i < n; i++) 
+        if (arr[i] > mx) 
+            mx = arr[i]; 
+    return mx; 
+} 
+
+int main(int argc, char *argv[]) { 
     int num_process, rank;
     MPI_Status Stat;
     MPI_Init(&argc, &argv);
@@ -41,23 +47,50 @@ int main(int argc, char *argv[])
     int* sub_numbers = (int*) malloc(sizeof(int) * n_per_proc);
     MPI_Scatter(numbers, n_per_proc, MPI_INT, sub_numbers, n_per_proc, MPI_INT, 0, MPI_COMM_WORLD);
 
+    // Compute sub count in each processes
     int i, sub_count[10] = {0};
     for (i = 0; i < n_per_proc; i++) {
         sub_count[(sub_numbers[i] / divisor) % 10]++;
     }
-    for (i = 1; i < 10; i++) {
-        sub_count[i] += sub_count[i - 1];
-    }
+    MPI_Barrier(MPI_COMM_WORLD);
 
-    printf("[SUB]\n");
-    for (int i = 0; i < n_per_proc; i++) {
-        printf("%d ", sub_numbers[i]);
+    // Reduce all the sub counts to root process
+    if (rank == 0) {
+        int count[10] = {0};
+        MPI_Reduce(sub_count, count, 10, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+
+        for (i = 1; i < 10; i++) {
+            count[i] += count[i - 1];
+        }
+        
+        int* temp_numbers = (int*) malloc(sizeof(int) * n);
+        for (i = n - 1; i >= 0; i--) { 
+            temp_numbers[count[(numbers[i] / divisor) % 10] - 1] = numbers[i]; 
+            count[(numbers[i] / divisor) % 10]--; 
+        }
+
+        memcpy(numbers, temp_numbers, sizeof(int) * n);
+
+        printf("[SORTED]\n");
+        for (int i = 0; i < n; i++) {
+            printf("%d ", numbers[i]);
+        }
+        printf("\n");
+
+    } else {
+        MPI_Reduce(sub_count, 0, 10, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
     }
-    printf("\n");
-    for (int i = 0; i < 10; i++) {
-        printf("%d ", sub_count[i]);
-    }
-    printf("\n");
     
     MPI_Finalize();
 } 
+
+// Driver program
+// int main(int argc, char *argv[]) { 
+//     int n = 10;
+//     int arr[n];
+//     rng(arr, n);
+//     print(arr, n);
+//     radix_sort(arr, n);
+//     print(arr, n);
+//     return 0; 
+// } 
