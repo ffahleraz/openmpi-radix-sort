@@ -40,8 +40,9 @@ void count_sort(int* arr, int n, int exp) {
   
 void radix_sort(int* arr, int n) { 
     int m = get_max(arr, n); 
-    for (int exp = 1; m/exp > 0; exp *= 10) 
+    for (int exp = 1; m/exp > 0; exp *= 10) {
         count_sort(arr, n, exp); 
+    }
 }
 
 void print(int* arr, int n) { 
@@ -51,7 +52,12 @@ void print(int* arr, int n) {
 } 
   
 int main(int argc, char *argv[]) { 
-    int n = 10;
+    if (argc != 2) {
+        printf("Usage: ./serial_radix_sort <n>\n");
+        return 1;
+    }
+
+    int n = atoi(argv[1]);
     int* arr = (int*) malloc(sizeof(int) * n);
     clock_t start, end;
     double cpu_time_used;
@@ -66,7 +72,8 @@ int main(int argc, char *argv[]) {
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 
     printf("[Sorted array]\n");
-    printf("[Sorted in %f seconds]\n", cpu_time_used);
     print(arr, n);
+    printf("[Sorted in %f seconds]\n", cpu_time_used);
+
     return 0; 
 } 

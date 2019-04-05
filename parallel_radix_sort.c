@@ -31,7 +31,6 @@ void count_sort(int* arr, int n, int divisor, int num_process, int rank) {
     for (i = 0; i < n_per_proc; i++) {
         sub_count[(sub_arr[i] / divisor) % 10]++;
     }
-    MPI_Barrier(MPI_COMM_WORLD);
 
     // Reduce all the sub counts to root process
     if (rank == 0) {
@@ -57,20 +56,24 @@ void count_sort(int* arr, int n, int divisor, int num_process, int rank) {
 }
 
 void radix_sort(int* arr, int n, int num_process, int rank) { 
-    int m = get_max(arr, n); 
+    int m = get_max(arr, n);
     for (int divisor = 1; m / divisor > 0; divisor *= 10) {
         count_sort(arr, n, divisor, num_process, rank);
-        MPI_Barrier(MPI_COMM_WORLD);
     }
 }
 
 void print(int* arr, int n) { 
     for (int i = 0; i < n; i++) 
-        printf("%d ", arr[i]); 
+        printf("%d ", arr[i]);
     printf("\n");
 } 
 
 int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Usage: ./serial_radix_sort <n>\n> Note: <n> must be a multiple of the num of processors.\n");
+        return 1;
+    }
+
     // Init MPI communication
     int num_process, rank;
     MPI_Status Stat;
@@ -79,11 +82,11 @@ int main(int argc, char *argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
     // Sort
-    int n = 10;
+    int n = atoi(argv[1]);
     int* arr = (int*) malloc(sizeof(int) * n);
+    rng(arr, n);
 
     if (rank == 0) {
-        rng(arr, n);
         printf("[Original array]\n");
         print(arr, n);
 
@@ -96,8 +99,8 @@ int main(int argc, char *argv[]) {
         cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 
         printf("[Sorted array]\n");
-        printf("[Sorted in %f seconds]\n", cpu_time_used);
         print(arr, n);
+        printf("[Sorted in %f seconds]\n", cpu_time_used);
     } else {
         radix_sort(arr, n, num_process, rank);
     }
