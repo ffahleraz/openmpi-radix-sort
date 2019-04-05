@@ -19,38 +19,16 @@ int get_max(int* arr, int n) {
     return mx; 
 } 
 
-int main(int argc, char *argv[]) { 
-    int num_process, rank;
-    MPI_Status Stat;
-    MPI_Init(&argc, &argv);
-    MPI_Comm_size(MPI_COMM_WORLD, &num_process);
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    // Generate random numbers
-    int n = 10;
-    int* numbers = (int*) malloc(sizeof(int) * n);
-    rng(numbers, n);
-
-    if (rank == 0) {
-        printf("[MAIN]\n");
-        for (int i = 0; i < n; i++) {
-            printf("%d ", numbers[i]);
-        }
-        printf("\n");
-    }
-
-    // Do count sort for each digit index
-    int divisor = 1;
-
+void count_sort(int* arr, int n, int divisor, int num_process, int rank) {
     // Scatter random numbers to all processes
     int n_per_proc = n / num_process;
-    int* sub_numbers = (int*) malloc(sizeof(int) * n_per_proc);
-    MPI_Scatter(numbers, n_per_proc, MPI_INT, sub_numbers, n_per_proc, MPI_INT, 0, MPI_COMM_WORLD);
+    int* sub_arr = (int*) malloc(sizeof(int) * n_per_proc);
+    MPI_Scatter(arr, n_per_proc, MPI_INT, sub_arr, n_per_proc, MPI_INT, 0, MPI_COMM_WORLD);
 
     // Compute sub count in each processes
     int i, sub_count[10] = {0};
     for (i = 0; i < n_per_proc; i++) {
-        sub_count[(sub_numbers[i] / divisor) % 10]++;
+        sub_count[(sub_arr[i] / divisor) % 10]++;
     }
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -63,34 +41,54 @@ int main(int argc, char *argv[]) {
             count[i] += count[i - 1];
         }
         
-        int* temp_numbers = (int*) malloc(sizeof(int) * n);
+        int* temp_arr = (int*) malloc(sizeof(int) * n);
         for (i = n - 1; i >= 0; i--) { 
-            temp_numbers[count[(numbers[i] / divisor) % 10] - 1] = numbers[i]; 
-            count[(numbers[i] / divisor) % 10]--; 
+            temp_arr[count[(arr[i] / divisor) % 10] - 1] = arr[i]; 
+            count[(arr[i] / divisor) % 10]--; 
         }
-
-        memcpy(numbers, temp_numbers, sizeof(int) * n);
-
-        printf("[SORTED]\n");
-        for (int i = 0; i < n; i++) {
-            printf("%d ", numbers[i]);
-        }
-        printf("\n");
+        memcpy(arr, temp_arr, sizeof(int) * n);
+        free(temp_arr);
 
     } else {
         MPI_Reduce(sub_count, 0, 10, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
     }
-    
-    MPI_Finalize();
+    free(sub_arr);
+}
+
+void radix_sort(int* arr, int n, int num_process, int rank) { 
+    int m = get_max(arr, n); 
+    for (int divisor = 1; m / divisor > 0; divisor *= 10) {
+        count_sort(arr, n, divisor, num_process, rank);
+        MPI_Barrier(MPI_COMM_WORLD);
+    }
+}
+
+void print(int* arr, int n) { 
+    for (int i = 0; i < n; i++) 
+        printf("%d ", arr[i]); 
+    printf("\n");
 } 
 
-// Driver program
-// int main(int argc, char *argv[]) { 
-//     int n = 10;
-//     int arr[n];
-//     rng(arr, n);
-//     print(arr, n);
-//     radix_sort(arr, n);
-//     print(arr, n);
-//     return 0; 
-// } 
+int main(int argc, char *argv[]) {
+    // Init MPI communication
+    int num_process, rank;
+    MPI_Status Stat;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &num_process);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    // Sort
+    int n = 10;
+    int* arr = (int*) malloc(sizeof(int) * n);
+    if (rank == 0) {
+        rng(arr, n);
+        print(arr, n);
+        radix_sort(arr, n, num_process, rank);
+        print(arr, n);
+    } else {
+        radix_sort(arr, n, num_process, rank);
+    }
+
+    MPI_Finalize();
+    return 0; 
+} 
